@@ -48,14 +48,7 @@ option(RAPIDJSON_BUILD_UBSAN "Build rapidjson with undefined behavior sanitizer 
 option(RAPIDJSON_ENABLE_INSTRUMENTATION_OPT "Build rapidjson with -march or -mcpu options" ON)
 
 option(RAPIDJSON_HAS_STDSTRING "" OFF)
-if(RAPIDJSON_HAS_STDSTRING)
-    add_definitions(-DRAPIDJSON_HAS_STDSTRING)
-endif()
-
 option(RAPIDJSON_USE_MEMBERSMAP "" OFF)
-if(RAPIDJSON_USE_MEMBERSMAP)
-    add_definitions(-DRAPIDJSON_USE_MEMBERSMAP=1)
-endif()
 
 find_program(CCACHE_FOUND ccache)
 if(CCACHE_FOUND)
@@ -157,7 +150,19 @@ ELSEIF(WIN32)
 ENDIF()
 SET(CMAKE_INSTALL_DIR "${_CMAKE_INSTALL_DIR}" CACHE PATH "The directory cmake files are installed in")
 
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+add_library(RapidJSON INTERFACE)
+
+if(${RAPIDJSON_HAS_STDSTRING})
+    target_compile_definitions(RapidJSON INTERFACE RAPIDJSON_HAS_STDSTRING)
+endif()
+
+if(${RAPIDJSON_USE_MEMBERSMAP})
+    target_compile_definitions(RapidJSON INTERFACE RAPIDJSON_USE_MEMBERSMAP=1)
+endif()
+
+target_include_directories(RapidJSON INTERFACE
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include/rapidjson>)
 
 if(RAPIDJSON_BUILD_DOC)
     add_subdirectory(doc)
@@ -174,7 +179,7 @@ endif()
 if(RAPIDJSON_BUILD_TESTS)
     if(MSVC11)
         # required for VS2012 due to missing support for variadic templates
-        add_definitions(-D_VARIADIC_MAX=10)
+        target_compile_definitions(RapidJSON INTERFACE -D_VARIADIC_MAX=10)
     endif(MSVC11)
     add_subdirectory(test)
     include(CTest)
